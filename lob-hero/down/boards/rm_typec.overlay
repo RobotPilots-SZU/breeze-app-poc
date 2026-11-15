@@ -1,0 +1,13 @@
+/* DT7 receiver on the rm_typec USART3 RX pin (PC11). */
+
+&usart3 {
+	parity = "even";
+};
+
+/ {
+	remote_dt7: dt7 {
+		compatible = "rp,dt7-remote";
+		status = "okay";
+		uart = <&usart3>;
+	};
+};

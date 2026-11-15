@@ -4,6 +4,9 @@ if(NOT BOARD)
     set(BOARD rm_typec)
 endif()
 
+set(DTC_OVERLAY_FILE "${CMAKE_CURRENT_LIST_DIR}/boards/rm_typec.overlay"
+	CACHE STRING "Devicetree overlay for the down application" FORCE)
+
 list(APPEND ZEPHYR_EXTRA_MODULES
     "${WEST_TOPDIR}/common"
     "${WEST_TOPDIR}/lob-hero/common"
