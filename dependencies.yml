@@ -14,6 +14,9 @@ manifest:
       path: breeze
       revision: main
       import: submanifests
+    - name: breeze-modules
+      path: breeze-modules
+      revision: main
     - name: algo
       path: algo
       revision: main
