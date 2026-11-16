@@ -5,8 +5,8 @@ manifest:
   - -testing
   projects:
   - name: breeze
-    url: https://github.com/RobotPilots-SZU/breeze
-    revision: 3a0bcb9119c4d4f89d1f0abc3532d657bf669d77
+    url: https://github.com/vixhentx/breeze
+    revision: 2f5d0ffab26afdea3e63a5c786ce91fcb4ed9dc5
     path: externals/breeze
   - name: breeze-modules
     url: https://github.com/RobotPilots-SZU/breeze-modules

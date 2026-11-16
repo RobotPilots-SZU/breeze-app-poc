@@ -11,7 +11,7 @@ manifest:
 
   projects:
     - name: breeze
-      path: breeze
+      url: https://github.com/vixhentx/breeze
       revision: main
       import: submanifests
     - name: algo
