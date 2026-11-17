@@ -30,4 +30,5 @@ target_include_directories(app
 target_link_libraries(app
 	PRIVATE
 		lob_hero::interface
+		lob_hero::b2b
 )

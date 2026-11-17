@@ -12,3 +12,4 @@ target_link_libraries(lob_hero_interface
 add_library(lob_hero::interface ALIAS lob_hero_interface)
 
 add_subdirectory(modules/sensors)
+add_subdirectory(modules/b2b)
