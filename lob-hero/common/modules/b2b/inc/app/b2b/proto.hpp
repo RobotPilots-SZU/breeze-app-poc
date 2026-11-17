@@ -1,8 +1,8 @@
 /**
  * @file proto.hpp
  * @author vix_hentx (w1084349470@outlook.com)
- * @brief 板间通信协议基本框架(can总线)
- * @note 仅用于can总线通信. 非can总线可以考虑直接使用communicator模块, 此通信设计上用于利用can的id机制进行优先级设定.
+ * @brief 板间定长通信协议基本框架
+ * @note 变长可以自行拦截传输层得到的数据, 从而支持communicator模块对接
  * @version 0.1
  * @date 2026-11-16
  *
@@ -12,24 +12,19 @@
 
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
+#include "basis.hpp"
 #include <etl/delegate.h>
+#include <etl/ranges.h>
 #include <etl/span.h>
+#include <utility>
 
 namespace app::b2b
 {
 
 #include "_proto_details.hpp"
 
-struct TransferInfo
-{
-	std::uint16_t Id;
-	etl::span<const std::byte> Data;
-};
-
 /**
- * @brief 表示协议支持的所有消息.纯编译期标记类型.
+ * @brief 表示定长协议支持的所有消息. 纯编译期标记类型.
  *
  * @tparam TMsgs 所有消息类型
  */
@@ -44,8 +39,11 @@ struct AvailableMessages
 	}
 };
 
-template <typename... TMsgs>
-using CallbackTable = std::tuple<etl::delegate<void(const TMsgs&)>...>;
+template <details::Message TMsg>
+using Callback = etl::delegate<void(const TMsg&)>;
+
+template <details::ValidMessages... TMsgs>
+using CallbackTable = std::tuple<Callback<TMsgs>...>;
 
 template <typename TAvailable>
 class Encoder;
@@ -56,24 +54,58 @@ class Encoder<AvailableMessages<TMsgs...>>
 public:
 	template <details::Message TMsg>
 	    requires(details::MessageOf<TMsg, TMsgs...>)
-	TransferInfo Encode(const TMsg& msg);
+	TransferInfo Encode(const TMsg& msg)
+	{
+		constexpr std::uint16_t ID = TMsg::ID;
+		return {.Id = ID, .Data = {reinterpret_cast<std::byte*>(&msg), sizeof(TMsg)}};
+	}
 };
 
-template <details::Message... THandledMsgs>
-    requires(sizeof...(THandledMsgs) > 0 && details::UniqueIds<THandledMsgs...>)
+template <details::Message... TMsgs>
+    requires(sizeof...(TMsgs) > 0 && details::UniqueIds<TMsgs...>)
 class Decoder
 {
 public:
-	using Callbacks = CallbackTable<THandledMsgs...>;
+	using Callbacks = CallbackTable<TMsgs...>;
 
 	template <typename TAvailable>
-	    requires(details::HandledMessagesAreAvailable<TAvailable, THandledMsgs...>)
+	    requires(details::HandledMessagesAreAvailable<TAvailable, TMsgs...>)
 	explicit Decoder(Callbacks callbacks)
 	    : _callbacks(callbacks)
 	{}
 
+	/**
+	 * @brief 根据处理表遍历查找并处理.
+	 * @note 代码相当于手写一个大switch, 只是自动化了
+	 *
+	 * @param transfer 传输层数据
+	 * @return bool 该消息是否支持被处理
+	 */
+	bool Decode(TransferInfo transfer) { return DecodeImpl(transfer, std::index_sequence_for<TMsgs...>{}); };
+
 private:
 	Callbacks _callbacks;
+
+	template <std::size_t... Is>
+	bool DecodeImpl(TransferInfo transfer, std::index_sequence<Is...>)
+	{
+		return (TryDecodeSingle<Is, TMsgs>(transfer) || ...);
+	}
+
+	template <std::size_t Index, typename Msg>
+	bool TryDecodeSingle(TransferInfo transfer)
+	{
+		if (transfer.Id == Msg::ID)
+		{
+			// 仅长度匹配才触发解码
+			if (transfer.Data.size_bytes() == sizeof(Msg))
+			{
+				std::get<Index>(_callbacks)();
+			}
+			return true;
+		}
+		return false;
+	}
 };
 
 /**

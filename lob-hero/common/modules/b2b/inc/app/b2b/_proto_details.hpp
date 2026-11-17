@@ -38,10 +38,6 @@ template <typename T, typename... Ts>
 concept MessageOf = (std::same_as<T, Ts> || ...);
 template <typename... TMsgs>
 concept ValidMessages = (Message<TMsgs> && ...) && UniqueIds<TMsgs...>;
-
-template <typename F, typename TMsg>
-concept Handler = std::invocable<F&, const TMsg&> && std::same_as<std::invoke_result_t<F&, const TMsg&>, void>;
-
 template <typename TAvailable, typename... THandledMsgs>
 concept HandledMessagesAreAvailable = (TAvailable::template Contains<THandledMsgs>() && ...);
 
