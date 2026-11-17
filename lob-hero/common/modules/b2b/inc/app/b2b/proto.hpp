@@ -16,6 +16,7 @@
 #include <etl/delegate.h>
 #include <etl/ranges.h>
 #include <etl/span.h>
+#include <memory>
 #include <utility>
 
 namespace app::b2b
@@ -100,7 +101,8 @@ private:
 			// 仅长度匹配才触发解码
 			if (transfer.Data.size_bytes() == sizeof(Msg))
 			{
-				std::get<Index>(_callbacks)();
+				const auto& msg = *reinterpret_cast<const Msg*>(transfer.Data.data());
+				std::get<Index>(_callbacks)(msg);
 			}
 			return true;
 		}
