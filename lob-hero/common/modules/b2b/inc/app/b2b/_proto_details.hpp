@@ -11,7 +11,7 @@ namespace app::b2b::details
  */
 template <typename T>
 concept Message = requires {
-	{ T::ID } -> std::same_as<std::uint8_t>;
+	{ T::ID } -> std::same_as<const std::uint8_t&>;
 };
 
 /**
