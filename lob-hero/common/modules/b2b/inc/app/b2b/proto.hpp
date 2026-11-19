@@ -2,7 +2,7 @@
  * @file proto.hpp
  * @author vix_hentx (w1084349470@outlook.com)
  * @brief 板间定长通信协议基本框架
- * @note 变长可以自行拦截传输层得到的数据, 从而支持communicator模块对接
+ * @note
  * @version 0.1
  * @date 2026-11-16
  *
@@ -12,17 +12,15 @@
 
 #pragma once
 
-#include "basis.hpp"
+#include "_proto_details.hpp"
+#include <cstddef>
+#include <cstring>
 #include <etl/delegate.h>
 #include <etl/ranges.h>
 #include <etl/span.h>
-#include <memory>
 #include <utility>
-
 namespace app::b2b
 {
-
-#include "_proto_details.hpp"
 
 /**
  * @brief 表示定长协议支持的所有消息. 纯编译期标记类型.
@@ -55,10 +53,22 @@ class Encoder<AvailableMessages<TMsgs...>>
 public:
 	template <details::Message TMsg>
 	    requires(details::MessageOf<TMsg, TMsgs...>)
-	TransferInfo Encode(const TMsg& msg)
+	/**
+	 * @brief 编码数据到缓冲区上
+	 *
+	 * @param msg 要编码的消息
+	 * @param buffer 缓冲区. 通常由调用方在栈上创建数组
+	 * @return etl::span<const std::byte> 编码后数据. 只要不进断言就会成功.
+	 */
+	etl::span<const std::byte> Encode(const TMsg& msg, etl::span<std::byte> buffer)
 	{
-		constexpr std::uint16_t ID = TMsg::ID;
-		return {.Id = ID, .Data = {reinterpret_cast<std::byte*>(&msg), sizeof(TMsg)}};
+		constexpr std::uint8_t ID = TMsg::ID;
+		assert(buffer.size() > sizeof(TMsg) + sizeof(ID));
+
+		std::memcpy(buffer.data(), &ID, sizeof(ID));
+		std::memcpy(buffer.data() + sizeof(ID), &msg, sizeof(TMsg));
+
+		return {reinterpret_cast<std::byte*>(buffer.data()), sizeof(ID) + sizeof(TMsg)};
 	}
 };
 
@@ -82,73 +92,84 @@ public:
 	 * @param transfer 传输层数据
 	 * @return bool 该消息是否支持被处理
 	 */
-	bool Decode(TransferInfo transfer) { return DecodeImpl(transfer, std::index_sequence_for<TMsgs...>{}); };
+	bool Decode(etl::span<const std::byte> data) { return DecodeImpl(data, std::index_sequence_for<TMsgs...>{}); };
 
 private:
 	Callbacks _callbacks;
 
 	template <std::size_t... Is>
-	bool DecodeImpl(TransferInfo transfer, std::index_sequence<Is...>)
+	bool DecodeImpl(etl::span<const std::byte> transfer, std::index_sequence<Is...>)
 	{
 		return (TryDecodeSingle<Is, TMsgs>(transfer) || ...);
 	}
 
-	template <std::size_t Index, typename Msg>
-	bool TryDecodeSingle(TransferInfo transfer)
+	template <std::size_t Index, typename TMsg>
+	bool TryDecodeSingle(etl::span<const std::byte> transfer)
 	{
-		if (transfer.Id == Msg::ID)
+		constexpr std::uint8_t ID = TMsg::ID;
+		// 长度不足直接停止解码
+		if (transfer.size_bytes() < sizeof(ID))
 		{
-			// 仅长度匹配才触发解码
-			if (transfer.Data.size_bytes() == sizeof(Msg))
+			return true;
+		}
+		if (auto id = *reinterpret_cast<const decltype(ID)*>(transfer.data()); id == ID)
+		{
+			if (transfer.size_bytes() != sizeof(ID) + sizeof(TMsg))
 			{
-				const auto& msg = *reinterpret_cast<const Msg*>(transfer.Data.data());
+				const auto& msg = *reinterpret_cast<const TMsg*>(transfer.data() + sizeof(ID));
 				std::get<Index>(_callbacks)(msg);
 			}
 			return true;
 		}
 		return false;
+	};
+
+	/**
+	 * @brief 构造 `Decoder`. 充分利用编译器推断.
+	 * @code {.cpp}
+	 *
+	    #pragma pack(push, 1)
+	    struct MsgA
+	    {
+	        static constexpr std::uint8_t ID = 0x10;
+	        float MotorTorque;
+	    };
+	    struct MsgB
+	    {
+	        static constexpr std::uint8_t ID = 0x11;
+	        float Yaw;
+	    };
+
+	    struct MsgC
+	    {
+	        static constexpr std::uint8_t ID = 0x12;
+	        float Pitch;
+	    };
+
+	    #pragma pack(pop)
+
+	    using Avail = app::b2b::AvailableMessages<MsgA, MsgB>;
+
+	    app::b2b::Encoder<Avail> encoder;
+	    auto cb_a = [](const MsgA&) {};
+	    auto cb_b = [](const MsgB&) {};
+	    auto decoder = app::b2b::MkDecoder<Avail>(std::tuple{
+	        etl::make_delegate(cb_a),
+	        etl::make_delegate(cb_b),
+	    });
+
+	 * @endcode
+	 *
+	 *
+	 * @tparam TAvailable
+	 * @tparam THandledMsgs
+	 */
+	template <typename TAvailable, details::Message... THandledMsgs>
+	    requires(details::HandledMessagesAreAvailable<TAvailable, THandledMsgs...>)
+	Decoder<THandledMsgs...> MkDecoder(CallbackTable<THandledMsgs...> callbacks)
+	{
+		return {callbacks};
 	}
 };
-
-/**
- * @brief 构造 `Decoder`. 充分利用编译器推断.
- * @code {.cpp}
- *
-    struct MsgA
-    {
-        static constexpr std::uint16_t ID = 0x100;
-    };
-    struct MsgB
-    {
-        static constexpr std::uint16_t ID = 0x101;
-    };
-
-    struct MsgC
-    {
-        static constexpr std::uint16_t ID = 0x102;
-    };
-
-    using Avail = app::b2b::AvailableMessages<MsgA, MsgB>;
-
-    app::b2b::Encoder<Avail> encoder;
-    auto cb_a = [](const MsgA&) {};
-    auto cb_b = [](const MsgB&) {};
-    auto decoder = app::b2b::MkDecoder<Avail>(std::tuple{
-        etl::make_delegate(cb_a),
-        etl::make_delegate(cb_b),
-    });
-
- * @endcode
- *
- *
- * @tparam TAvailable
- * @tparam THandledMsgs
- */
-template <typename TAvailable, details::Message... THandledMsgs>
-    requires(details::HandledMessagesAreAvailable<TAvailable, THandledMsgs...>)
-Decoder<THandledMsgs...> MkDecoder(CallbackTable<THandledMsgs...> callbacks)
-{
-	return {callbacks};
-}
 
 } // namespace app::b2b

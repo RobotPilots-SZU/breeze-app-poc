@@ -2,11 +2,26 @@
 
 吊射英雄板间通信模块试行. 目前处于乱写状态, 后续会整理出框架到 `breeze-modules`.
 
-## 协议定义
+## 通信结构和协议定义
 
-采用 `ISO-TP` 传输协议, 根据 `ID` 判断消息包执行固定解析. 不额外传Tag, 长度或者传输逻辑, 并且相信CAN, 不做CRC校验.
+```mermaid
+graph LR
+subgraph TP[ISO-TP传输层]
+  CAN_ID
+  TP_PAYLOAD[表现层数据]
+end
 
-`ID` 即为 CAN ID, 有优先级机制.
+subgraph B2B[板通表现层解析]
+  B2B_ID[ID]
+  B2B_PAYLOAD[结构体强转]
+end
+
+subgraph Com["Communicator (RP-PROTO) 解析"]
+
+end
+
+TP_PAYLOAD --> B2B & Com
+```
 
 ## 抽象层次和结构
 

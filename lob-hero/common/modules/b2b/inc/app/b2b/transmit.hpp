@@ -20,6 +20,7 @@ namespace app::b2b
 {
 /**
  * @brief 经典CAN协议的一对一通信. 使用ISO-TP进行表现层数据传输.
+ * @note 一对Transmitter服务于一种协议. 对于 B2B的结构体协议和RP-Proto, 通常是分别创建Transmitter
  *
  */
 class Transmitter

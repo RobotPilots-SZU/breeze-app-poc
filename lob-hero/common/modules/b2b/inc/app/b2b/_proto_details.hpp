@@ -3,24 +3,23 @@
 #include <concepts>
 #include <cstdint>
 #include <etl/delegate.h>
-#include <type_traits>
 
-namespace details
+namespace app::b2b::details
 {
 /**
- * @brief 协议支持的消息. 需要持有`ID`编译常量, 且在CAN ID支持范围内
+ * @brief 协议支持的消息. 需要持有uint8类型的`ID`编译常量.
  */
 template <typename T>
 concept Message = requires {
-	{ T::ID } -> std::convertible_to<std::uint16_t>;
-} && T::ID > 0 && T::ID < 2048;
+	{ T::ID } -> std::same_as<std::uint8_t>;
+};
 
 /**
  * @brief 协议消息Id的独立性校验. 拦截重复Id.
  */
 template <typename... Ts>
 concept UniqueIds = []() consteval -> bool {
-	constexpr std::uint16_t IDS[] = {Ts::ID...};
+	constexpr std::uint8_t IDS[] = {Ts::ID...};
 	for (std::size_t i = 0; i < sizeof...(Ts); ++i)
 	{
 		for (std::size_t j = i + 1; j < sizeof...(Ts); ++j)
@@ -41,4 +40,4 @@ concept ValidMessages = (Message<TMsgs> && ...) && UniqueIds<TMsgs...>;
 template <typename TAvailable, typename... THandledMsgs>
 concept HandledMessagesAreAvailable = (TAvailable::template Contains<THandledMsgs>() && ...);
 
-} // namespace details
+} // namespace app::b2b::details
