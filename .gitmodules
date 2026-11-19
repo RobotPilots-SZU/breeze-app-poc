@@ -1,0 +1,3 @@
+[submodule "breeze-modules"]
+	path = breeze-modules
+	url = https://github.com/RobotPilots-SZU/breeze-modules.git
