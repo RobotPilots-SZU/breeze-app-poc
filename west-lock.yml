@@ -8,10 +8,6 @@ manifest:
     url: https://github.com/vixhentx/breeze
     revision: 2f5d0ffab26afdea3e63a5c786ce91fcb4ed9dc5
     path: externals/breeze
-  - name: breeze-modules
-    url: https://github.com/RobotPilots-SZU/breeze-modules
-    revision: 6e90cf2c2c6b39c1c72e970c9126ed9172c06895
-    path: externals/breeze-modules
   - name: algo
     url: https://github.com/RobotPilots-SZU/algo
     revision: 2015dec93dc18910512f3460a9f2824034a656c7

@@ -1,7 +1,0 @@
-# Copyright (c) 2025 RobotPilots-SZU
-# SPDX-License-Identifier: Apache-2.0
-
-menuconfig POC_COMMON
-	bool "Breeze poc common modules"
-	help
-	  Common module for poc to reuse, making it easier to port to breeze-modules.

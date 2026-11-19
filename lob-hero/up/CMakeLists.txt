@@ -5,7 +5,7 @@ if(NOT BOARD)
 endif()
 
 list(APPEND ZEPHYR_EXTRA_MODULES
-    "${WEST_TOPDIR}/common"
+    "${WEST_TOPDIR}/breeze-modules"
     "${WEST_TOPDIR}/lob-hero/common"
 )
 
@@ -30,5 +30,5 @@ target_include_directories(app
 target_link_libraries(app
 	PRIVATE
 		lob_hero::interface
-		lob_hero::b2b
+		breeze::module::b2b
 )

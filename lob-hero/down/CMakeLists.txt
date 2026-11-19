@@ -8,7 +8,7 @@ set(DTC_OVERLAY_FILE "${CMAKE_CURRENT_LIST_DIR}/boards/rm_typec.overlay"
 	CACHE STRING "Devicetree overlay for the down application" FORCE)
 
 list(APPEND ZEPHYR_EXTRA_MODULES
-    "${WEST_TOPDIR}/common"
+    "${WEST_TOPDIR}/breeze-modules"
     "${WEST_TOPDIR}/lob-hero/common"
 )
 
@@ -34,4 +34,5 @@ target_link_libraries(app
 	PRIVATE
 		lob_hero::interface
 		lob_hero::sensors
+		breeze::module::b2b
 )
