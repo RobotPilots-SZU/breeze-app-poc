@@ -9,7 +9,6 @@
 #include <cstdint>
 #include <cstring>
 #include <optional>
-#include <type_traits>
 
 namespace app::sensors
 {
@@ -169,7 +168,7 @@ struct RC::Impl
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-RC::RC(device* remote)
+RC::RC(const device* remote)
     : InTick([this]() { _impl.Tick(*this); }),
       OutOnline([this](auto& out) { out = _impl.Sensor->is_online; }),
       _impl(*new (_storage) Impl{

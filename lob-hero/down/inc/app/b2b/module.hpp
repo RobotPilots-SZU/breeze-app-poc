@@ -8,14 +8,10 @@
 namespace app::b2b
 {
 
-using MotorControlPushers = breeze::models::IndexedEnumArray<
-    models::MotorId,
-    ramen::Pusher<breeze::models::MotorControl>,
-    models::MOTOR_IDS>;
-using MotorReportPullers = breeze::models::IndexedEnumArray<
-    models::MotorId,
-    ramen::Puller<breeze::models::MotorReport>,
-    models::MOTOR_IDS>;
+using MotorControlPushers =
+    breeze::models::IndexedEnumArray<models::MotorId, ramen::Pusher<breeze::models::MotorControl>, models::MOTOR_IDS>;
+using MotorReportPullers =
+    breeze::models::IndexedEnumArray<models::MotorId, ramen::Puller<breeze::models::MotorReport>, models::MOTOR_IDS>;
 
 struct Output
 {
@@ -36,7 +32,7 @@ class DownModule
 public:
 	Output Out;
 	Input In;
-	DownModule(device* dev);
+	DownModule(const device* dev);
 
 private:
 	constexpr static std::size_t IMPL_SIZE = 4096;

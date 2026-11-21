@@ -22,10 +22,8 @@ using namespace app::b2b;
 struct CastHandler
 {
 	Output& Out;
-	using MotorReportLatches = breeze::models::IndexedEnumArray<
-	    MotorId,
-	    ramen::Latch<breeze::models::MotorReport>,
-	    MOTOR_IDS>;
+	using MotorReportLatches =
+	    breeze::models::IndexedEnumArray<MotorId, ramen::Latch<breeze::models::MotorReport>, MOTOR_IDS>;
 	MotorReportLatches MotorReports;
 
 	void Handle(const MotorControl& in) { Out.Motors[in.Id](FromProto(in)); }
@@ -62,7 +60,7 @@ struct B2BCast
 	ramen::Pushable<etl::span<const std::byte>> InHandleRx = [this](const auto data) { Decoder.Decode(data, Handler); };
 
 	// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-	B2BCast(device* dev, Input& in, Output& out)
+	B2BCast(const device* dev, Input& in, Output& out)
 	    : Transmitter(dev, {.SelfId = DOWN_ADDR.B2B, .TargetId = UP_ADDR.B2B, .Buffer = TransmitterBuffer}),
 	      Handler(in, out)
 	{
@@ -79,13 +77,13 @@ namespace app::b2b
 struct DownModule::Impl
 {
 	B2BCast Cast;
-	Impl(device* dev, Input& in, Output& out)
+	Impl(const device* dev, Input& in, Output& out)
 	    : Cast(dev, in, out)
 	{}
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-DownModule::DownModule(device* dev)
+DownModule::DownModule(const device* dev)
 {
 	static_assert(sizeof(Impl) <= IMPL_SIZE);
 	std::construct_at(P(), dev, In, Out);

@@ -36,7 +36,7 @@ public:
 	ramen::Pullable<bool> OutOnline;
 	ramen::Pusher<breeze::models::Posture> OutPosture;
 
-	RC(device* remote);
+	RC(const device* remote);
 
 private:
 	friend struct Impl;
