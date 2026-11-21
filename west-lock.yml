@@ -14,7 +14,7 @@ manifest:
     path: externals/algo
   - name: ramenx
     url: https://github.com/RobotPilots-SZU/ramenx
-    revision: adc0c8ea24ffeded1836493092a3661087215a37
+    revision: 0b3d56a54d4b9f2c8bf58df218108c92df00a390
     path: externals/ramenx
   - name: zephyr
     url: https://github.com/zephyrproject-rtos/zephyr
