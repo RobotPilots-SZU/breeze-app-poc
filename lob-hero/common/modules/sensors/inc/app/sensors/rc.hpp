@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <breeze/models/unit.hpp>
 #include <ramen.hpp>
 #include <zephyr/device.h>
 
@@ -33,10 +34,12 @@ public:
 	 *
 	 */
 	ramen::Pullable<bool> OutOnline;
+	ramen::Pusher<breeze::models::Posture> OutPosture;
 
 	RC(device* remote);
 
 private:
+	friend struct Impl;
 	struct Impl;
 	Impl& _impl;
 	static constexpr auto IMPL_SIZE = 1024;

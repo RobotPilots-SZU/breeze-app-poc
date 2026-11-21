@@ -50,6 +50,7 @@ const rc_parser_ops_t* GetParser(const device* remote)
 struct RC::Impl
 {
 	using RxMessageQueue = ramen::MsgQueue<RxChunk, RX_CHUNK_COUNT, ramen::OverflowPolicy::DropOldest>;
+	static constexpr float MAX_STICK_ANGLE = 90.0F;
 
 	rc_sensor_t* Sensor;
 
@@ -110,7 +111,22 @@ struct RC::Impl
 		Sensor->is_online = true;
 	}
 
-	void Tick()
+	/**
+	 * @brief 根据右摇杆值获取姿态指令.
+	 * @note 目前采用位移控制, 未进行积分
+	 */
+	breeze::models::Posture Posture() const
+	{
+		constexpr float CHANNEL_SCALE = MAX_STICK_ANGLE / 660.0F;
+		const auto& info = *Sensor->info;
+		return {
+		    .Pitch = {static_cast<float>(info.ch1) * CHANNEL_SCALE},
+		    .Roll = {0.0F},
+		    .Yaw = {static_cast<float>(-info.ch0) * CHANNEL_SCALE},
+		};
+	}
+
+	void DriverTick()
 	{
 		std::optional<RxChunk> next;
 		RxQueue.out(next);
@@ -142,11 +158,19 @@ struct RC::Impl
 			rc_keyboard_update(Sensor->info);
 		}
 	}
+	void Tick(RC& rc)
+	{
+		DriverTick();
+		if (Sensor->is_online)
+		{
+			rc.OutPosture(Posture());
+		}
+	}
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 RC::RC(device* remote)
-    : InTick([this]() { _impl.Tick(); }),
+    : InTick([this]() { _impl.Tick(*this); }),
       OutOnline([this](auto& out) { out = _impl.Sensor->is_online; }),
       _impl(*new (_storage) Impl{
           .Sensor = GetSensor(remote),
