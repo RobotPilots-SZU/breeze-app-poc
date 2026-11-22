@@ -51,15 +51,15 @@ struct Input
 };
 
 /**
- * @brief 上板的B2B通信模块.
+ * @brief 下板的B2B通信模块.
  *
  */
-class UpModule
+class DownModule
 {
 public:
 	Output Out;
 	Input In;
-	UpModule(const device* dev);
+	DownModule(const device* dev);
 
 private:
 	constexpr static std::size_t IMPL_SIZE = 4096;

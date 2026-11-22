@@ -82,7 +82,7 @@ struct B2BCast
 namespace app::b2b
 {
 
-struct UpModule::Impl
+struct DownModule::Impl
 {
 	B2BCast Cast;
 	Impl(const device* dev, Output& out)
@@ -91,7 +91,7 @@ struct UpModule::Impl
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-UpModule::UpModule(const device* dev)
+DownModule::DownModule(const device* dev)
     : Out{.Imus = ImuReportPullables{[this]<typename TId>(TId) {
 	          return ramen::Pullable<breeze::models::ImuAngularReport>{[this](auto& out) {
 		          out = P()->Cast.Handler.ImuCache[TId::value];
@@ -107,6 +107,6 @@ UpModule::UpModule(const device* dev)
 	std::construct_at(P(), dev, Out);
 }
 
-UpModule::Impl* UpModule::P() { return std::launder(reinterpret_cast<Impl*>(&_storage)); }
+DownModule::Impl* DownModule::P() { return std::launder(reinterpret_cast<Impl*>(&_storage)); }
 
 } // namespace app::b2b

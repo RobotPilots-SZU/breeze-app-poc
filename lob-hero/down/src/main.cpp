@@ -16,7 +16,7 @@
 namespace app
 {
 
-b2b::UpModule b2b_com{DEVICE_DT_GET(DT_NODELABEL(can2))};
+b2b::DownModule b2b_com{DEVICE_DT_GET(DT_NODELABEL(can2))};
 sensors::RC rc{DEVICE_DT_GET(DT_NODELABEL(remote_dt7))};
 
 static void Start()
