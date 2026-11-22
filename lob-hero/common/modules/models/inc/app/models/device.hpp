@@ -20,7 +20,7 @@ namespace app::models
  * @brief 电机ID (类型) 集合
  *
  */
-enum MotorId : std::uint8_t
+enum class MotorId : std::uint8_t
 {
 	Unspecified,
 	GimbalYaw,         ///< 云台Yaw电机, 装在底盘上
@@ -36,4 +36,36 @@ constexpr std::array MOTOR_IDS = []() -> auto {
 	return std::array{Unspecified,       GimbalYaw,         HeadPitch,         ForwardLeftWheel,
 	                  ForwardRightWheel, BackwardLeftWheel, BackwardRightWheel};
 }();
+constexpr std::array UP_MOTORS = []() {
+	using enum models::MotorId;
+	return std::array{HeadPitch};
+}();
+constexpr std::array DOWN_MOTORS = []() {
+	using enum models::MotorId;
+	return std::array{GimbalYaw, ForwardLeftWheel, ForwardRightWheel, BackwardLeftWheel, BackwardRightWheel};
+}();
+
+/**
+ * @brief Imu 集合
+ *
+ */
+enum class ImuId : std::uint8_t
+{
+	Unspecified,
+	Head,   ///< 头上imu
+	Chassis ///< 底盘imu
+};
+constexpr std::array IMU_IDS = []() {
+	using enum ImuId;
+	return std::array{Unspecified, Head, Chassis};
+}();
+constexpr std::array UP_IMUS = []() {
+	using enum ImuId;
+	return std::array{Head};
+}();
+constexpr std::array DOWN_IMUS = []() {
+	using enum ImuId;
+	return std::array{Chassis};
+}();
+
 } // namespace app::models
