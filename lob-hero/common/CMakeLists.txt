@@ -13,4 +13,5 @@ add_library(lob_hero::interface ALIAS lob_hero_interface)
 
 add_subdirectory(modules/models)
 add_subdirectory(modules/sensors)
+add_subdirectory(modules/motors)
 add_subdirectory(modules/b2b)
