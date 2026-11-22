@@ -1,9 +1,11 @@
-#include "app/b2b/module.hpp"
-#include "breeze/b2b/proto.hpp"
+#include <app/b2b/module.hpp>
 #include <app/b2b/msg.hpp>
 #include <app/b2b/msgconvert.hpp>
+#include <app/models/device.hpp>
 #include <app/models/priority.hpp>
+#include <breeze/b2b/proto.hpp>
 #include <breeze/b2b/transmit.hpp>
+#include <breeze/models/device.hpp>
 #include <breeze/models/utils.hpp>
 #include <etl/array.h>
 #include <etl/span.h>
@@ -22,20 +24,20 @@ using namespace app::b2b;
 struct CastHandler
 {
 	Output& Out;
-	using MotorReportLatches =
-	    breeze::models::IndexedEnumArray<MotorId, ramen::Latch<breeze::models::MotorReport>, MOTOR_IDS>;
-	MotorReportLatches MotorReports;
+	breeze::models::IndexedEnumArray<ImuId, breeze::models::ImuAngularReport, UP_IMUS, IMU_IDS> ImuCache;
 
-	void Handle(const MotorControl& in) { Out.Motors[in.Id](FromProto(in)); }
-
-	void Handle(const MotorReport& in) { MotorReports[in.Id].in(FromProto(in)); }
-
-	CastHandler(Input& in, Output& out)
-	    : Out(out)
+	void Handle(const MotorReport& in)
 	{
-		for (const auto id : MOTOR_IDS)
+		if (auto* p = Out.Motors.At(in.Id); p != nullptr)
 		{
-			in.Motors[id] >> MotorReports[id].out;
+			(*p)(FromProto(in));
+		}
+	}
+	void Handle(const ImuReport& in)
+	{
+		if (auto* p = ImuCache.At(in.Id); p != nullptr)
+		{
+			*p = FromProto(in);
 		}
 	}
 };
@@ -60,12 +62,18 @@ struct B2BCast
 	ramen::Pushable<etl::span<const std::byte>> InHandleRx = [this](const auto data) { Decoder.Decode(data, Handler); };
 
 	// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-	B2BCast(const device* dev, Input& in, Output& out)
+	B2BCast(const device* dev, Output& out)
 	    : Transmitter(dev, {.SelfId = DOWN_ADDR.B2B, .TargetId = UP_ADDR.B2B, .Buffer = TransmitterBuffer}),
-	      Handler(in, out)
+	      Handler{out}
 	{
 		Lift.in_wait >> Transmitter.OutReceiveWait;
 		Lift.out >> InHandleRx;
+	}
+
+	void Send(MotorId id, const breeze::models::MotorControl& control)
+	{
+		const auto message = ToProto(control, id);
+		Transmitter.InSend(Encoder.Encode(message, TransmitterBuffer));
 	}
 };
 
@@ -74,21 +82,31 @@ struct B2BCast
 namespace app::b2b
 {
 
-struct DownModule::Impl
+struct UpModule::Impl
 {
 	B2BCast Cast;
-	Impl(const device* dev, Input& in, Output& out)
-	    : Cast(dev, in, out)
+	Impl(const device* dev, Output& out)
+	    : Cast(dev, out)
 	{}
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-DownModule::DownModule(const device* dev)
+UpModule::UpModule(const device* dev)
+    : Out{.Imus = ImuReportPullables{[this]<typename TId>(TId) {
+	          return ramen::Pullable<breeze::models::ImuAngularReport>{[this](auto& out) {
+		          out = P()->Cast.Handler.ImuCache[TId::value];
+	          }};
+          }}},
+      In{.Motors = MotorControlPushables{[this]<typename TId>(TId) {
+	         return ramen::Pushable<breeze::models::MotorControl>{[this](const auto& control) {
+		         P()->Cast.Send(TId::value, control);
+	         }};
+         }}}
 {
 	static_assert(sizeof(Impl) <= IMPL_SIZE);
-	std::construct_at(P(), dev, In, Out);
+	std::construct_at(P(), dev, Out);
 }
 
-DownModule::Impl* DownModule::P() { return std::launder(reinterpret_cast<Impl*>(&_storage)); }
+UpModule::Impl* UpModule::P() { return std::launder(reinterpret_cast<Impl*>(&_storage)); }
 
 } // namespace app::b2b

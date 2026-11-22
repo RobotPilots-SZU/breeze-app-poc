@@ -1,4 +1,7 @@
+#pragma once
+
 #include <app/b2b/msg.hpp>
+#include <app/models/device.hpp>
 #include <breeze/models/device.hpp>
 #include <breeze/models/utils.hpp>
 #include <cstddef>
@@ -8,31 +11,55 @@
 namespace app::b2b
 {
 
-using MotorControlPushers =
-    breeze::models::IndexedEnumArray<models::MotorId, ramen::Pusher<breeze::models::MotorControl>, models::MOTOR_IDS>;
-using MotorReportPullers =
-    breeze::models::IndexedEnumArray<models::MotorId, ramen::Puller<breeze::models::MotorReport>, models::MOTOR_IDS>;
+using MotorControlPushables = breeze::models::IndexedEnumArray<
+    models::MotorId,
+    ramen::Pushable<breeze::models::MotorControl>,
+    models::UP_MOTORS,
+    models::MOTOR_IDS
+>;
+using MotorReportPushers = breeze::models::
+    IndexedEnumArray<models::MotorId, ramen::Pusher<breeze::models::MotorReport>, models::UP_MOTORS, models::MOTOR_IDS>;
 
+using ImuReportPullables = breeze::models::IndexedEnumArray<
+    models::ImuId,
+    ramen::Pullable<breeze::models::ImuAngularReport>,
+    models::UP_IMUS,
+    models::IMU_IDS
+>;
+
+/**
+ * @brief 从模块输出的端口 (来自于UP)
+ *
+ */
 struct Output
 {
-	MotorControlPushers Motors;
-};
-
-struct Input
-{
-	MotorReportPullers Motors;
+	MotorReportPushers Motors;
+	ImuReportPullables Imus;
 };
 
 /**
- * @brief 下板的b2b模块.
+ * @brief 输入到模块的端口 (发送到UP)
  *
  */
-class DownModule
+struct Input
+{
+	/**
+	 * @brief 电机控制
+	 *
+	 */
+	MotorControlPushables Motors;
+};
+
+/**
+ * @brief 上板的B2B通信模块.
+ *
+ */
+class UpModule
 {
 public:
 	Output Out;
 	Input In;
-	DownModule(const device* dev);
+	UpModule(const device* dev);
 
 private:
 	constexpr static std::size_t IMPL_SIZE = 4096;
