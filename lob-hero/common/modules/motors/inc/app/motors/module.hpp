@@ -41,19 +41,12 @@ struct RmConfig
 	std::uint8_t TransmissionRatio; ///< 电流(A)转换为驱动值的系数
 };
 
-/**
- * @brief 达喵电机配置
- *
- */
-enum class DmProfile : std::uint8_t
+/** @brief LK/KT机械参数与Nm到闭环Iq命令LSB的换算系数。 */
+struct LkConfig
 {
-};
-/**
- * @brief 领控电机配置
- *
- */
-enum class LkProfile : std::uint8_t
-{
+	std::uint16_t EncoderCounts;
+	std::uint8_t TransmissionRatio;
+	float IqCommandPerNewtonMeter;
 };
 
 /**
@@ -87,5 +80,51 @@ private:
 extern template class RmModule<RmProfile::M3508C620>;
 extern template class RmModule<RmProfile::M2006C610>;
 extern template class RmModule<RmProfile::GM6020>;
+
+/** @brief 达妙电机模块. */
+class DmModule
+{
+public:
+	ramen::Pushable<breeze::models::MotorControl> InControl;
+	ramen::Pushable<> InTick;
+	ramen::Pullable<breeze::models::MotorReport> OutReport;
+	ramen::Pullable<bool> OutOnline;
+	DmModule(const device* dev);
+
+	~DmModule();
+	DmModule(const DmModule&) = delete;
+	DmModule& operator=(const DmModule&) = delete;
+	DmModule(DmModule&&) = delete;
+	DmModule& operator=(DmModule&&) = delete;
+
+private:
+	struct Impl;
+	static constexpr std::size_t IMPL_SIZE = 512;
+	alignas(std::max_align_t) std::byte _storage[IMPL_SIZE];
+	Impl* P();
+};
+
+/** @brief LK/KT单电机闭环扭矩模块。 */
+class LkModule
+{
+public:
+	ramen::Pushable<breeze::models::MotorControl> InControl;
+	ramen::Pushable<> InTick;
+	ramen::Pullable<breeze::models::MotorReport> OutReport;
+	ramen::Pullable<bool> OutOnline;
+	LkModule(const device* dev, LkConfig conf);
+
+	~LkModule();
+	LkModule(const LkModule&) = delete;
+	LkModule& operator=(const LkModule&) = delete;
+	LkModule(LkModule&&) = delete;
+	LkModule& operator=(LkModule&&) = delete;
+
+private:
+	struct Impl;
+	static constexpr std::size_t IMPL_SIZE = 512;
+	alignas(std::max_align_t) std::byte _storage[IMPL_SIZE];
+	Impl* P();
+};
 
 } // namespace app::motors
