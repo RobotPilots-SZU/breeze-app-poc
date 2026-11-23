@@ -99,7 +99,7 @@ CheckOptions:
 
   # --- 常量 / constexpr / 全局 / 静态（补齐 microWAV 类别，统一到项目体系）---
   - key: readability-identifier-naming.ConstantCase
-    value: camelBack
+    value: PascalCase
   - key: readability-identifier-naming.ConstexprVariableCase
     value: UPPER_CASE
   - key: readability-identifier-naming.GlobalConstantCase
