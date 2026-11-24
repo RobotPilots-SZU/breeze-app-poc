@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <breeze/models/control.hpp>
 #include <breeze/models/unit.hpp>
 #include <ramen.hpp>
 #include <zephyr/device.h>
@@ -34,7 +35,17 @@ public:
 	 *
 	 */
 	ramen::Pullable<bool> OutOnline;
+	/**
+	 * @brief 目标云台姿态
+	 *
+	 */
 	ramen::Pusher<breeze::models::Posture> OutPosture;
+	/**
+	 * @brief 云台模式.
+	 * @note 关控设为none, 左下右上, 波轮向下为机械模式, 向上为陀螺仪模式
+	 *
+	 */
+	ramen::Pullable<breeze::models::GimbalControlMode> OutGimbalMode;
 
 	RC(const device* remote);
 

@@ -1,3 +1,4 @@
+#include "breeze/models/control.hpp"
 #include <app/sensors/rc.hpp>
 #include <drivers/remote/rc_common.h>
 #include <drivers/remote/remote.h>
@@ -19,6 +20,7 @@ constexpr size_t FRAME_SIZE = 18;
 constexpr size_t RX_CHUNK_SIZE = 36;
 constexpr size_t RX_CHUNK_COUNT = 8;
 constexpr uint32_t FRAME_GAP_MS = 5;
+constexpr int16_t THUMBWHELL_THRESHOLD = 100;
 
 struct RxChunk
 {
@@ -61,6 +63,8 @@ struct RC::Impl
 	uint32_t ExpectedSequence = 0;
 
 	uint32_t LastRxTime = k_uptime_get_32();
+
+	breeze::models::GimbalControlMode LastGimbalMode = breeze::models::GimbalControlMode::None;
 
 	uint8_t Frame[FRAME_SIZE]{};
 	size_t FrameIndex = 0;
@@ -105,9 +109,30 @@ struct RC::Impl
 		}
 
 		Parser->parse(Frame, Sensor->info);
+		const int16_t previousWheel = Sensor->info->thumbwheel.value_last;
 		rc_sensor_check(Sensor);
 		rc_interrupt_update(Sensor);
 		Sensor->is_online = true;
+		LastGimbalMode = CalcGimbalMode(previousWheel);
+	}
+
+	breeze::models::GimbalControlMode CalcGimbalMode(int16_t previousWheel) const
+	{
+		const auto& info = *Sensor->info;
+		const int16_t wheel = info.thumbwheel.value;
+		if (info.s1 == RC_SW_DOWN && info.s2 == RC_SW_UP)
+		{
+			if (wheel <= -THUMBWHELL_THRESHOLD && previousWheel > -THUMBWHELL_THRESHOLD)
+			{
+				return breeze::models::GimbalControlMode::Mechanical;
+			}
+			// NOLINTNEXTLINE(readability-else-after-return)
+			else if (wheel >= THUMBWHELL_THRESHOLD && previousWheel < THUMBWHELL_THRESHOLD)
+			{
+				return breeze::models::GimbalControlMode::Gyro;
+			}
+		}
+		return LastGimbalMode;
 	}
 
 	/**
@@ -123,6 +148,11 @@ struct RC::Impl
 		    .Roll = {0.0F},
 		    .Yaw = {static_cast<float>(-info.ch0) * CHANNEL_SCALE},
 		};
+	}
+
+	breeze::models::GimbalControlMode GimbalMode() const
+	{
+		return Sensor->is_online ? LastGimbalMode : breeze::models::GimbalControlMode::None;
 	}
 
 	void DriverTick()
@@ -171,6 +201,7 @@ struct RC::Impl
 RC::RC(const device* remote)
     : InTick([this]() { _impl.Tick(*this); }),
       OutOnline([this](auto& out) { out = _impl.Sensor->is_online; }),
+      OutGimbalMode([this](auto& out) { out = _impl.GimbalMode(); }),
       _impl(*new (_storage) Impl{
           .Sensor = GetSensor(remote),
           .Parser = GetParser(remote),
