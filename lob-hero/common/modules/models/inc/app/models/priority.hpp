@@ -13,6 +13,16 @@
 namespace app::models::priority
 {
 /**
+ * @brief 控制循环
+ *
+ */
+constexpr int CONTROL_TICK = 8;
+/**
+ * @brief 传感器循环
+ *
+ */
+constexpr int SENSOR_TICK = 8;
+/**
  * @brief 高速板通
  *
  */

@@ -5,9 +5,39 @@
 };
 
 / {
+    can_rx_mgr1: can_rx_mgr1 {
+        compatible = "rp,can-rx-manager";
+        status = "okay";
+        can-bus = <&can1>;
+        label = "can_rx_mgr1";
+    };
+
+    can_tx_mgr1: can_tx_mgr1 {
+        compatible = "rp,can-tx-manager";
+        status = "okay";
+        can-bus = <&can1>;
+        label = "can_tx_mgr1";
+    };
+
 	remote_dt7: dt7 {
 		compatible = "rp,dt7-remote";
 		status = "okay";
 		uart = <&usart3>;
+	};
+
+	gimbal_yaw: gimbal_yaw {
+		compatible = "rp,lk-can-motor";
+		status = "okay";
+		can-bus = <&can1>;
+		rx-manager = <&can_rx_mgr1>;
+		tx-manager = <&can_tx_mgr1>;
+		tx-id = <0x142>;
+		rx-id = <0x142>;
+		motor-type = "MS";
+		label = "gimbal_yaw";
+		Tx-feq = <1000>;
+		motor-encoder = <32767>;
+		motor-transmission-ratio = <1>; // TODO: 找具体减速比
+		control-mode = "single_control";
 	};
 };

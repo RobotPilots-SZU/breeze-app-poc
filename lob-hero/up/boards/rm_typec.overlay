@@ -1,0 +1,37 @@
+/* DT7 receiver on the rm_typec USART3 RX pin (PC11). */
+
+&usart3 {
+	parity = "even";
+};
+
+/ {
+    can_rx_mgr1: can_rx_mgr1 {
+        compatible = "rp,can-rx-manager";
+        status = "okay";
+        can-bus = <&can1>;
+        label = "can_rx_mgr1";
+    };
+
+    can_tx_mgr1: can_tx_mgr1 {
+        compatible = "rp,can-tx-manager";
+        status = "okay";
+        can-bus = <&can1>;
+        label = "can_tx_mgr1";
+    };
+
+	gimbal_pitch: gimbal_pitch {
+		compatible = "rp,dm-can-motor";
+		status = "okay";
+		can-bus = <&can1>;
+		rx-manager = <&can_rx_mgr1>;
+		tx-manager = <&can_tx_mgr1>;
+		tx-id = <0x06>;
+		rx-id = <0x32>;
+		motor-type = "DM80";
+		label = "gimbal_pitch";
+		Tx-feq = <1000>;
+		motor-encoder = <65535>;
+		motor-transmission-ratio = <9>; // TODO: 找具体减速比
+		control-mode = "MIT";
+	};
+};
