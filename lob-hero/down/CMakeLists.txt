@@ -39,6 +39,5 @@ target_link_libraries(app
 		lob_hero::b2b
 		breeze::module::b2b
 		breeze::module::gimbal
-		breeze::module::common
 		breeze::module::models
 )
