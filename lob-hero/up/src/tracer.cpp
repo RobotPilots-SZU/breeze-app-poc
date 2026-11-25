@@ -15,14 +15,13 @@ void Tracer::OnTick() const
 {
 	if (auto ret = *InImu; ret != decltype(ret){})
 	{
+		LOG_INF("Imu value:");
 		LOG_INF(
-		    "Imu value:"
-		    "{"
-		    "\tvalue of: yaw=%f, roll=%f, pitch=%f"
-		    "\trate of: yaw=%f, roll=%f, pitch=%f"
-		    "}",
-		    ret.Yaw.Value, ret.Roll.Value, ret.Pitch.Value,            // 角度
-		    ret.YawRate.Value, ret.RollRate.Value, ret.PitchRate.Value // 角速度
+		    "\tv: y=%.2f, r=%.2f, p=%.2f", ret.Yaw.Value, ret.Roll.Value, ret.Pitch.Value // 角度
+		);
+		LOG_INF(
+		    "\tr: y=%.2f, r=%.2f, p=%.2f", ret.YawRate.Value, ret.RollRate.Value,
+		    ret.PitchRate.Value // 角速度
 		);
 	}
 }
