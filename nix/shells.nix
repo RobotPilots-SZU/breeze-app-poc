@@ -22,6 +22,7 @@
         nativeBuildInputs = [
           nanopbPython
           pkgs.protobuf
+          pkgs.gcc-arm-embedded
         ]
         ++ (old.nativeBuildInputs or [ ]);
       });

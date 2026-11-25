@@ -1,0 +1,16 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Zephyr Debug",
+			"type": "cortex-debug",
+			"request": "launch",
+			"cwd": "${workspaceFolder}",
+			"executable": "${workspaceFolder}/build/zephyr/zephyr.elf",
+			"servertype": "external",
+			"gdbTarget": "localhost:3333",
+			"rtos": "Zephyr",
+			"runToEntryPoint": "main"
+		}
+	]
+}
