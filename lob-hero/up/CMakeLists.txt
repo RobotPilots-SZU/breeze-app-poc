@@ -31,5 +31,7 @@ target_link_libraries(app
 	PRIVATE
 		lob_hero::interface
         lob_hero::b2b
+        lob_hero::sensors
+        lob_hero::motors
 		breeze::module::b2b
 )

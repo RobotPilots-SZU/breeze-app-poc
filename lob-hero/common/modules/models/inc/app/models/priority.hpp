@@ -38,4 +38,10 @@ constexpr int B2B_CAST_COLLECT = 11;
  *
  */
 constexpr int B2B_COM_TRANS = 11;
+
+/**
+ * @brief 数据日志
+ *
+ */
+constexpr int TRACE_TICK = 100;
 } // namespace app::models::priority
