@@ -8,5 +8,6 @@
 		"--completion-style=detailed",
 		"--compile-commands-dir=${workspaceFolder}/build"
 	],
-	"cmake.configureOnOpen": false
+	"cmake.configureOnOpen": false,
+	"cortex-debug.variableUseNaturalFormat": false
 }

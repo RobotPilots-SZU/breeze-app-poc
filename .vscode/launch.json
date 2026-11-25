@@ -2,7 +2,7 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Zephyr Debug",
+			"name": "Zephyr Debug(via Zephyr DebugServer)",
 			"type": "cortex-debug",
 			"request": "launch",
 			"cwd": "${workspaceFolder}",
@@ -11,6 +11,40 @@
 			"gdbTarget": "localhost:3333",
 			"rtos": "Zephyr",
 			"runToEntryPoint": "main"
+		},
+		{
+			"name": "Zephyr OpenOCD Debug (JLink)",
+			"cwd": "${workspaceFolder}",
+			"executable": "${workspaceFolder}/build/zephyr/zephyr.elf",
+			"request": "launch",
+			"type": "cortex-debug",
+			"runToEntryPoint": "main",
+			"servertype": "openocd",
+			"configFiles": [
+				"interface/jlink.cfg",
+				"${workspaceFolder}/stm32f4x_swd.cfg"
+			],
+			"rttConfig": {
+				"enabled": true,
+				"address": "auto",
+				"polling_interval": 10,
+				"rtt_start_retry": 1000,
+				"details": {
+					"autoOpen": true,
+					"useMessageBox": false
+				},
+				"decoders": [
+					{
+						"label": "Zephyr RTT",
+						"port": 0,
+						"type": "console"
+					}
+				]
+			},
+			"liveWatch": {
+				"enabled": true,
+				"samplesPerSecond": 10
+			},
 		}
 	]
 }
