@@ -75,6 +75,8 @@ struct B2BCast
 		const auto message = ToProto(control, id);
 		Transmitter.InSend(Encoder.Encode(message, TransmitterBuffer));
 	}
+
+	void Start() { Lift.start(); }
 };
 
 } // namespace
@@ -88,6 +90,7 @@ struct DownModule::Impl
 	Impl(const device* dev, Output& out)
 	    : Cast(dev, out)
 	{}
+	void Start() { Cast.Start(); }
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
@@ -108,5 +111,7 @@ DownModule::DownModule(const device* dev)
 }
 
 DownModule::Impl* DownModule::P() { return std::launder(reinterpret_cast<Impl*>(&_storage)); }
+
+void DownModule::Start() { P()->Start(); }
 
 } // namespace app::b2b

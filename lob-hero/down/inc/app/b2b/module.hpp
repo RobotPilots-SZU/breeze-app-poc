@@ -60,10 +60,11 @@ public:
 	Output Out;
 	Input In;
 	DownModule(const device* dev);
+	void Start();
 
 private:
 	constexpr static std::size_t IMPL_SIZE = 4096;
-	alignas(std::max_align_t) std::byte _storage[IMPL_SIZE];
+	alignas(CONFIG_ARM_MPU_REGION_MIN_ALIGN_AND_SIZE) std::byte _storage[IMPL_SIZE];
 	struct Impl;
 	Impl* P();
 };
