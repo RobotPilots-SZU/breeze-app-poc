@@ -71,6 +71,7 @@ struct B2BCast
 	{
 		Lift.start();
 		Collector.start();
+		Transmitter.Start();
 	}
 
 	void Collect()
@@ -93,8 +94,11 @@ struct B2BCast
 				// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 				breeze::models::ImuAngularReport report;
 				(*puller)(report);
-				const auto message = ToProto(report, id);
-				Transmitter.InSend(Encoder.Encode(message, TransmitterBuffer));
+				if (report != decltype(report){})
+				{
+					const auto message = ToProto(report, id);
+					Transmitter.InSend(Encoder.Encode(message, TransmitterBuffer));
+				}
 			}
 		}
 	}

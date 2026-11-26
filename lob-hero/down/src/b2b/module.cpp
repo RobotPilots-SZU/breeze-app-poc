@@ -76,7 +76,11 @@ struct B2BCast
 		Transmitter.InSend(Encoder.Encode(message, TransmitterBuffer));
 	}
 
-	void Start() { Lift.start(); }
+	void Start()
+	{
+		Lift.start();
+		Transmitter.Start();
+	}
 };
 
 } // namespace
