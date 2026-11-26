@@ -1,5 +1,5 @@
 CompileFlags:
-  CompilationDatabase: build
+  CompilationDatabase: infantry_dog/build
   Remove:
     - -mfp16-format=ieee
     - -fno-reorder-functions
