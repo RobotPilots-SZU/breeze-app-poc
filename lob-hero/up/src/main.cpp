@@ -1,3 +1,4 @@
+#include <app/b2b.hpp>
 #include <app/models/priority.hpp>
 #include <app/sensors/imu.hpp>
 #include <app/tracer.hpp>
@@ -27,6 +28,8 @@ sensors::Imu headImu{
     {}
 };
 
+b2b::UpModule b2bCom{DEVICE_DT_GET(DT_NODELABEL(can1)), K_MSEC(10)};
+
 Tracer tracer{};
 
 } // namespace
@@ -40,6 +43,7 @@ void Start()
 	sensorFrame.start();
 
 	headImu.Start();
+	b2bCom.Start();
 }
 void Connect()
 {

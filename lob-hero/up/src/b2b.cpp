@@ -39,7 +39,7 @@ struct B2BCast
 	ramen::ThreadLift<etl::span<const std::byte>, 512> Lift{
 	    ramen::DispatcherConfig{.priority = app::models::priority::B2B_CAST_TRANS, .name = "b2b_lift"}
 	};
-	ramen::FrameProvider<512> Collector;
+	ramen::FrameProvider<1024> Collector;
 	breeze::b2b::Transmitter Transmitter;
 	etl::array<std::byte, 512> TransmitterBuffer;
 
@@ -65,6 +65,10 @@ struct B2BCast
 		Lift.in_wait >> Transmitter.OutReceiveWait;
 		Lift.out >> InHandleRx;
 		Collector.out >> InCollect;
+	}
+
+	void Start()
+	{
 		Lift.start();
 		Collector.start();
 	}
@@ -101,12 +105,14 @@ struct B2BCast
 namespace app::b2b
 {
 
+// 内部实现分层. 分为B2B Cast 和 RP-Proto
 struct UpModule::Impl
 {
 	B2BCast Cast;
 	Impl(const device* dev, Output& out, Input& in, k_timeout_t collectPeriod)
 	    : Cast(dev, out, in, collectPeriod)
 	{}
+	void Start() { Cast.Start(); }
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
@@ -119,6 +125,7 @@ UpModule::UpModule(const device* dev, k_timeout_t collectPeriod)
 	static_assert(sizeof(Impl) <= IMPL_SIZE);
 	std::construct_at(P(), dev, Out, In, collectPeriod);
 }
+void UpModule::Start() { P()->Start(); }
 
 UpModule::Impl* UpModule::P() { return std::launder(reinterpret_cast<Impl*>(&_storage)); }
 
