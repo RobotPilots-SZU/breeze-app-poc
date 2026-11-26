@@ -25,12 +25,14 @@ namespace app::b2b
  */
 struct Address
 {
-	std::uint8_t B2B;          ///< 板通CAN地址
-	std::uint8_t Communicator; ///< Communicator (RP-Proto) CAN地址
+	std::uint16_t B2B;            ///< 板通CAN地址
+	std::uint16_t B2BFc;          ///< 本板发送B2B数据时接收FC的CAN地址
+	std::uint16_t Communicator;   ///< Communicator (RP-Proto) CAN地址
+	std::uint16_t CommunicatorFc; ///< Communicator (RP-Proto) 的FC CAN地址
 };
 
-constexpr Address UP_ADDR{.B2B = 0x30, .Communicator = 0x40};
-constexpr Address DOWN_ADDR{.B2B = 0x31, .Communicator = 0x41};
+constexpr Address UP_ADDR{.B2B = 0x30, .B2BFc = 0x130, .Communicator = 0x40};
+constexpr Address DOWN_ADDR{.B2B = 0x31, .B2BFc = 0x131, .Communicator = 0x41};
 
 #pragma pack(push, 1)
 struct MotorControl

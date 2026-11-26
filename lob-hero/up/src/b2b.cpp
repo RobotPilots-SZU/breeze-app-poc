@@ -58,7 +58,13 @@ struct B2BCast
 	          .priority = app::models::priority::B2B_CAST_COLLECT,
 	          .name = "b2b_collect",
 	      }),
-	      Transmitter(dev, {.SelfId = UP_ADDR.B2B, .TargetId = DOWN_ADDR.B2B, .Buffer = TransmitterBuffer}),
+	      Transmitter(dev, {
+	          .RxDataId = UP_ADDR.B2B,
+	          .TxFcId = DOWN_ADDR.B2BFc,
+	          .TxDataId = DOWN_ADDR.B2B,
+	          .RxFcId = UP_ADDR.B2BFc,
+	          .Buffer = TransmitterBuffer,
+	      }),
 	      Handler{out},
 	      In{in}
 	{
@@ -69,9 +75,9 @@ struct B2BCast
 
 	void Start()
 	{
+		Transmitter.Start();
 		Lift.start();
 		Collector.start();
-		Transmitter.Start();
 	}
 
 	void Collect()

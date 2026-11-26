@@ -23,11 +23,11 @@ west flash -d build/b2b-down-module -r openocd
 
 `module_loopback` 实例化 `DownModule`，原始 ISO-TP 端点模拟上板：
 
-1. 保留模拟上板的普通接收绑定，发送 14 字节 IMU，观察 FC 是否被重叠过滤器截走。
-2. 移除模拟上板接收绑定，等待前次接收超时清理后再次发送，读取模块 IMU 缓存。
-3. 重新绑定模拟上板接收端，触发模块发送 MotorControl，校验全部 4 字节。
+1. 保留模拟上板的普通接收绑定，使用独立 FC ID 发送 14 字节 IMU。
+2. 读取模块 IMU 缓存，校验三个姿态分量及三个角速度分量。
+3. 触发模块发送 MotorControl，模拟上板接收并校验全部 4 字节。
 
-这是故障复现测试，当前实现的前两个阶段会输出失败。
+正常结果为 `MODULE LOOPBACK SUMMARY: PASS`。
 
 ## 实板结果（2026-11-26，rm_typec / STM32F407）
 
@@ -49,21 +49,36 @@ west flash -d build/b2b-down-module -r openocd
 接收绑定。该对照在原始 API 层复现并消除了超时，支持过滤器冲突的诊断。
 当前结果不显示 ISO-TP 基础分帧/流控功能故障；仍需另行验证真实双板链路。
 
-模块：保留普通接收绑定时发送返回 -2（FC 超时）；移除绑定后发送返回 0，
+修复前模块：保留普通接收绑定时发送返回 -2（FC 超时）；移除绑定后发送返回 0，
 但缓存仍为零；MotorControl 单帧接收通过。
 
-对应两项传输层问题：
+已修复的两项传输层问题：
 
-- `Transmitter` 的普通数据接收和发送时 FC 接收使用同一个自身 CAN ID。
+- 原 `Transmitter` 的普通数据接收和发送时 FC 接收使用同一个自身 CAN ID。
   bxCAN 不保证重叠过滤器的回调都收到帧，普通接收上下文可能先收到 FC 并将其丢弃。
   模拟对端测试复现了这一条件；真实上板的传输实例也有相同绑定方式。
 - `bs=8` 时 `isotp_recv()` 可能返回 First Frame 数据和后续块，
-  `Transmitter::Receive()` 当前将每段直接交给要求完整长度的 Decoder。
-  需要使用 `isotp_recv_net()` 的剩余长度信息重组完整报文，或使用 `bs=0`
-  并确保接收池足以容纳允许的最大报文。
+  原 `Transmitter::Receive()` 将每段直接交给要求完整长度的 Decoder。
+  现保留 `bs=8`，使用 `isotp_recv_net()` 的剩余长度信息重组完整报文后再解码。
 
-后续修复 FC 应采用互不重叠的数据/FC CAN ID，或统一接收过滤器后按 PCI 分发。
-不能单靠增加超时时间解决。两板的地址方案需要同步修改。
+两板现在使用以下地址；上下板固件需同步更新：
+
+| 方向 | 数据 CAN ID | FC CAN ID |
+| --- | --- | --- |
+| up → down | 0x31 | 0x130 |
+| down → up | 0x30 | 0x131 |
+
+修复后实板模块回环结果：
+
+```text
+Peer IMU send result: 0
+DownModule IMU: yaw=10.00 roll=-2.50 pitch=3.75: PASS
+DownModule MotorControl RX length=4: PASS
+MODULE LOOPBACK SUMMARY: PASS
+```
+
+两端普通接收绑定始终保留；IMU 六个字段全部校验通过。
+收发线程在传输实例完成启动和 ISO-TP 绑定后才启动。
 
 已有 `breeze-modules/test/src/b2b/test.cpp` 覆盖编解码，未覆盖真实 CAN/ISO-TP 传输。
 

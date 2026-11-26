@@ -63,7 +63,13 @@ struct B2BCast
 
 	// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 	B2BCast(const device* dev, Output& out)
-	    : Transmitter(dev, {.SelfId = DOWN_ADDR.B2B, .TargetId = UP_ADDR.B2B, .Buffer = TransmitterBuffer}),
+	    : Transmitter(dev, {
+	          .RxDataId = DOWN_ADDR.B2B,
+	          .TxFcId = UP_ADDR.B2BFc,
+	          .TxDataId = UP_ADDR.B2B,
+	          .RxFcId = DOWN_ADDR.B2BFc,
+	          .Buffer = TransmitterBuffer,
+	      }),
 	      Handler{out}
 	{
 		Lift.in_wait >> Transmitter.OutReceiveWait;
@@ -78,8 +84,8 @@ struct B2BCast
 
 	void Start()
 	{
-		Lift.start();
 		Transmitter.Start();
+		Lift.start();
 	}
 };
 

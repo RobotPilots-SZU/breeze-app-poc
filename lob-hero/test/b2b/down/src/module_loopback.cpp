@@ -16,8 +16,6 @@ LOG_MODULE_REGISTER(b2b_down_module_loopback, LOG_LEVEL_INF);
 namespace
 {
 
-constexpr std::uint16_t UP_ID = 0x30;
-constexpr std::uint16_t DOWN_ID = 0x31;
 constexpr std::size_t PEER_RX_SIZE = 32;
 
 const device* Can = DEVICE_DT_GET(DT_NODELABEL(can1));
@@ -31,11 +29,19 @@ etl::array<std::uint8_t, PEER_RX_SIZE> PeerRxData{};
 int PeerRxLength = ISOTP_RECV_TIMEOUT;
 
 const isotp_msg_id PeerRxAddr{
-	.std_id = UP_ID,
+	.std_id = app::b2b::UP_ADDR.B2B,
 	.flags = ISOTP_MSG_EXT_ADDR,
 };
 const isotp_msg_id PeerTxAddr{
-	.std_id = DOWN_ID,
+	.std_id = app::b2b::DOWN_ADDR.B2B,
+	.flags = ISOTP_MSG_EXT_ADDR,
+};
+const isotp_msg_id PeerRxFcAddr{
+	.std_id = app::b2b::UP_ADDR.B2BFc,
+	.flags = ISOTP_MSG_EXT_ADDR,
+};
+const isotp_msg_id PeerTxFcAddr{
+	.std_id = app::b2b::DOWN_ADDR.B2BFc,
 	.flags = ISOTP_MSG_EXT_ADDR,
 };
 const isotp_fc_opts FcOpts{
@@ -83,7 +89,7 @@ int main()
 		return 0;
 	}
 
-	ret = isotp_bind(&PeerRecvCtx, Can, &PeerRxAddr, &PeerTxAddr, &FcOpts, K_SECONDS(1));
+	ret = isotp_bind(&PeerRecvCtx, Can, &PeerRxAddr, &PeerTxFcAddr, &FcOpts, K_SECONDS(1));
 	if (ret != 0) {
 		LOG_ERR("Peer isotp_bind failed: %d", ret);
 		return 0;
@@ -99,35 +105,31 @@ int main()
 		.Yaw = 1000,
 		.Roll = -250,
 		.Pitch = 375,
+		.YawRate = 500,
+		.RollRate = -125,
+		.PitchRate = 250,
 	};
 	const auto imuPayload = encoder.Encode(imuReport, txBuffer);
 	ret = isotp_send(&PeerSendCtx, Can,
 			 reinterpret_cast<const std::uint8_t*>(imuPayload.data()), imuPayload.size(),
-			 &PeerTxAddr, &PeerRxAddr, nullptr, nullptr);
+			 &PeerTxAddr, &PeerRxFcAddr, nullptr, nullptr);
 	LOG_INF("Peer IMU send result: %d", ret);
-	isotp_unbind(&PeerRecvCtx);
-	k_sleep(K_MSEC(100));
-	ret = isotp_send(&PeerSendCtx, Can,
-			 reinterpret_cast<const std::uint8_t*>(imuPayload.data()), imuPayload.size(),
-			 &PeerTxAddr, &PeerRxAddr, nullptr, nullptr);
-	LOG_INF("Peer IMU send without overlapping RX filter: %d", ret);
+	const bool imuSent = ret == 0;
 	k_sleep(K_MSEC(100));
 
 	breeze::models::ImuAngularReport receivedImu{};
 	b2b.Out.Imus[app::models::ImuId::Head](receivedImu);
-	const bool imuPass = receivedImu.Yaw.Value == 10.0F &&
+	const bool imuPass = imuSent && receivedImu.Yaw.Value == 10.0F &&
 			     receivedImu.Roll.Value == -2.5F &&
-			     receivedImu.Pitch.Value == 3.75F;
+			     receivedImu.Pitch.Value == 3.75F &&
+			     receivedImu.YawRate.Value == 5.0F &&
+			     receivedImu.RollRate.Value == -1.25F &&
+			     receivedImu.PitchRate.Value == 2.5F;
 	LOG_INF("DownModule IMU: yaw=%.2f roll=%.2f pitch=%.2f: %s",
 		static_cast<double>(receivedImu.Yaw.Value), static_cast<double>(receivedImu.Roll.Value),
 		static_cast<double>(receivedImu.Pitch.Value),
 		imuPass ? "PASS" : "FAIL");
 
-	ret = isotp_bind(&PeerRecvCtx, Can, &PeerRxAddr, &PeerTxAddr, &FcOpts, K_SECONDS(1));
-	if (ret != 0) {
-		LOG_ERR("Peer rebind failed: %d", ret);
-		return 0;
-	}
 	k_thread_create(&PeerReceiverThread, PeerReceiverStack, K_THREAD_STACK_SIZEOF(PeerReceiverStack),
 			PeerReceiver, nullptr, nullptr, nullptr, K_PRIO_PREEMPT(5), 0, K_NO_WAIT);
 	(void)k_sem_take(&PeerReceiverReady, K_SECONDS(1));
@@ -140,6 +142,7 @@ int main()
 			PeerRxData[2] == 0x00 && PeerRxData[3] == 0x40;
 	LOG_INF("DownModule MotorControl RX length=%d: %s", PeerRxLength,
 		motorPass ? "PASS" : "FAIL");
+	LOG_INF("MODULE LOOPBACK SUMMARY: %s", imuPass && motorPass ? "PASS" : "FAIL");
 
 	k_sleep(K_SECONDS(1));
 	isotp_unbind(&PeerRecvCtx);
